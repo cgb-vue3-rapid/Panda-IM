@@ -1,0 +1,11 @@
+Name: auth
+Host: 0.0.0.0
+Port: 8888
+Auth:
+  AccessSecret: panda@akita
+  AccessExpire: 604800
+DB:
+  DataSource: root:123456@tcp(192.168.30.130:3306)/panda_auth?charset=utf8mb4&parseTime=true
+  MaxIdleConns: 10
+  MaxOpenConns: 100
+  MaxLifeTime: 14400
