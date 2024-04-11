@@ -1,0 +1,16 @@
+Name: user.rpc
+ListenOn: 0.0.0.0:8080
+Etcd:
+  Hosts:
+    - 192.168.30.130:2379
+  Key: user.rpc
+BizRedis:
+  Host: 192.168.30.130:6379
+  Pass:
+  Type: node
+DB:
+  DataSource: root:123456@tcp(192.168.30.130:3306)/panda_user?charset=utf8mb4&parseTime=true
+  MaxIdleConns: 10
+  MaxOpenConns: 100
+  MaxLifeTime: 14400
+  Mode: info

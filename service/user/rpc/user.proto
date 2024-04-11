@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package service;
+option go_package="./pb";
+
+service User {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc GetUserInfoByID(UserInfoRequest) returns (UserInfoResponse);
+//  rpc SendSms(SendSmsRequest) returns (SendSmsResponse);
+}
+
+//message UserInfo {
+//  int64 userId = 1;
+//  string nickname = 2;
+//  string mobile = 3;
+//  string avatar = 4;
+//  int32 role = 7;
+//  string create_at = 5;
+//  string update_at = 6;
+//  int32 gender = 8;
+//  string abstract = 9;
+//  string ip  = 10;
+//  string addr = 11;
+//}
+
+message LoginRequest{
+  string mobile = 1;
+  string password = 3;
+}
+
+message LoginResponse{
+  int64 userId = 1;
+  string nickname = 2;
+  int32 role = 5;
+}
+
+message RegisterRequest {
+  string mobile = 1;
+  string password = 2;
+  string nickname = 3;
+  string avatar = 4;
+  int32 role = 5;
+  string code = 6;
+}
+
+message RegisterResponse {
+  int64 userId = 1;
+  string message = 3;
+}
+message LogoutRequest {
+  int64 userId = 1;
+}
+
+message LogoutResponse {
+  string message = 1;
+}
+
+
+//message SendSmsRequest {
+//  int64 userId = 1;
+//  string mobile = 2;
+//}
+//
+//message SendSmsResponse {
+//  string message = 1;
+//}
+
+
+message UserInfoRequest {
+  int64 userId = 1;
+}
+
+message UserInfoResponse {
+  int64 userId = 1;
+  string nickname = 2;
+  string mobile = 3;
+  string avatar = 4;
+  int32 role = 9;
+  string gender = 8;
+  string addr = 10;
+  string create_at = 5;
+  string update_at = 6;
+  string delete_at = 11;
+  bool  is_delete = 12;
+}
+
