@@ -9,7 +9,7 @@ import (
 func Migrate(db *gorm.DB) error {
 	// 在这里添加你的表迁移逻辑，例如：
 	err := db.AutoMigrate(
-		&entity.AuthModel{},
+		&entity.UserModel{},
 	)
 	if err != nil {
 		return err
