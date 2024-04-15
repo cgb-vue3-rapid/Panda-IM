@@ -1,0 +1,17 @@
+Name: gateway
+Addr: 127.0.0.1:8080
+ETCD:
+  Endpoints:
+  - 192.168.30.130:2379
+Auth:
+  Authenticate: authenticate
+Whitelist:
+  - /v1/api/auth/login
+  - /v1/api/auth/register
+  - /v1/api/auth/verification
+  - /v1/api/auth/authenticate
+  - /v1/api/user//userInfo
+Log:
+  Encoding: plain
+  TimeFormat: 2006-01-02 15:04:05
+  Stat: false
