@@ -1,0 +1,33 @@
+syntax = "v1"
+
+type UserInfonRequest {
+	UserID int64  `json:"user_id"`
+	Role   int32  `json:"role"`
+	Mobile string `json:"mobile,optional"`
+}
+
+type UserInfoResponse {
+	UserID   int64  `json:"user_id"`
+	Nickname string `json:"nickname"`
+	Mobile   string `json:"mobile"`
+	Avatar   string `json:"avatar"`
+	Role     int32  `json:"role"`
+	Gender   int    `json:"gender"`
+	Addr     string `json:"addr"`
+	Abstract string `json:"abstract"`
+	//       CreatedAt  string `json:"created_at"`
+	//       UpdatedAt  string `json:"updated_at"`
+	//       DeletedAt  string `json:"deleted_at"`
+	//       Is_Deleted bool   `json:"is_deleted"`
+	Message string `json:"message"`
+}
+
+@server (
+	prefix: /v1/api/user // 设置路由前缀
+)
+service user {
+	// 用户信息请求处理程序
+	@handler UserInfoHandler
+	get /userInfo (UserInfonRequest) returns (UserInfoResponse)
+}
+
