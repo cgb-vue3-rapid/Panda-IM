@@ -1,8 +1,16 @@
 package constants
 
 /*
+jwt相关
+*/
+// 604800
+const JwtExpire = 24              // JWT的过期时间
+const OrganizationName = " akita" // 签发人
+
+/*
 缓存相关
 */
+
 const (
 	// 缓存键
 	PrefixUserLoginCache = "panda:user:login:id:%s" //  登录态缓存键前缀
@@ -24,4 +32,16 @@ const (
 网关相关
 */
 
-const Prefix = ".server" // etcd key的前缀
+const (
+	ApiPrefix = ".api" // etcd key的前缀
+	RpcPrefix = ".rpc" // etcd key的前缀
+)
+
+/*
+请求相关
+*/
+const (
+	UserId       = "user_id"
+	AccessToken  = "accessToken"
+	RefreshToken = "refreshToken"
+)

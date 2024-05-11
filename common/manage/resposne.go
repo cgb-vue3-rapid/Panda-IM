@@ -53,3 +53,16 @@ func ErrHandler(err error) interface{} {
 		return CodeError{Code: InternalServerError.Code, Message: err.Error()}
 	}
 }
+
+//// ErrHandler 自定义错误返回函数 错误函数主入口
+//func ErrHandler(err error) interface{} {
+//	switch code := err.(*CodeError).Code; code {
+//	case InternalServerError.Code:
+//		return InternalServerError
+//	case NotImplemented.Code:
+//		return CodeError{Code: NotImplemented.Code, Message: err.Error()}
+//	default:
+//		// 默认情况下返回服务器内部错误
+//		return CodeError{Code: InternalServerError.Code, Message: err.Error()}
+//	}
+//}

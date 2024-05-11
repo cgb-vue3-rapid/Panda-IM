@@ -2,6 +2,7 @@ package etcdOp
 
 import (
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/netx"
 	"strings"
 )
 
@@ -15,8 +16,8 @@ func RegisterEtcd(etcdAddr, key, ip string, ttl int64) {
 	}
 	// 判断ip是否为0.0.0.0
 	if list[0] == "0.0.0.0" {
-		//newIP := util.GetSecondToLastIp()
-		ip = strings.ReplaceAll(ip, "0.0.0.0", "192.168.30.1")
+		newIP := netx.InternalIp()
+		ip = strings.ReplaceAll(ip, "0.0.0.0", newIP)
 	}
 	// 连接etcd
 	etcd := NewClient([]string{etcdAddr})

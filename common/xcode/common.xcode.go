@@ -14,3 +14,14 @@ var (
 	Deadline           = add(504, "DEADLINE_EXCEEDED")
 	LimitExceed        = add(509, "RESOURCE_EXHAUSTED")
 )
+
+//通用错误码
+
+var (
+	TokenIsEmpty     = New(101, "token is empty")
+	TokenFormatErr   = New(102, "token format error")
+	TokenParseErr    = New(103, "token parse error")
+	TokenExpired     = New(104, "token expired")
+	TokenGenerateErr = New(105, "token generate error")
+	TokenInvalid     = New(106, "token invalid")
+)

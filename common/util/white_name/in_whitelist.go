@@ -10,6 +10,6 @@ func InWhitelist(list []string, target string) bool {
 		}
 	}
 	// 如果没有找到匹配项，则抛出错误
-	logx.Errorf("当前请求不在白名单中:%s", target)
+	logx.Infof("当前请求不在白名单中:%s", target)
 	return false
 }

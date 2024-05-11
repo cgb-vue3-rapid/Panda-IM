@@ -4,6 +4,7 @@ import (
 	"akita/panda-im/common/util/random_munber"
 	"akita/panda-im/service/user/rpc/user"
 	"fmt"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"strconv"
 	"time"
@@ -12,6 +13,16 @@ import (
 /*
 用户信息相关
 */
+
+func CacheSetNxEx(userID int64, value, prefix string, ex int, rds *redis.Redis) bool {
+	key := fmt.Sprintf(prefix, strconv.Itoa(int(userID)))
+	setnxEx, err := rds.SetnxEx(key, value, ex)
+	if err != nil {
+		logx.Errorf("setnxEx err: %v", err)
+		return setnxEx
+	}
+	return setnxEx
+}
 
 // CheckCacheByUserID 检查缓存是否存在
 func CheckCacheByUserID(userID int64, prefix string, rds *redis.Redis) (string, error) {
@@ -46,17 +57,16 @@ func CacheUserInfoByUserID(id int64, userInfo *user.UserInfoResponse, prefix str
 
 	// 构建用户信息的 map
 	userMap := map[string]interface{}{
-		"UserID":     strconv.FormatInt(userInfo.UserId, 10),
-		"Nickname":   userInfo.Nickname,
-		"Mobile":     userInfo.Mobile,
-		"Avatar":     userInfo.Avatar,
-		"Role":       strconv.Itoa(int(userInfo.Role)),
-		"Gender":     userInfo.Gender,
-		"Addr":       userInfo.Addr,
-		"CreatedAt":  userInfo.CreateAt,
-		"UpdatedAt":  userInfo.UpdateAt,
-		"DeletedAt":  userInfo.DeleteAt,
-		"Is_Deleted": strconv.FormatBool(userInfo.IsDelete),
+		"UserID":   strconv.FormatInt(userInfo.UserId, 10),
+		"Nickname": userInfo.Nickname,
+		"Mobile":   userInfo.Mobile,
+		"Avatar":   userInfo.Avatar,
+		"Gender":   userInfo.Gender,
+		"Addr":     userInfo.Addr,
+		//"CreatedAt":  userInfo.CreateAt,
+		//"UpdatedAt":  userInfo.UpdateAt,
+		//"DeletedAt":  userInfo.DeleteAt,
+		//"Is_Deleted": strconv.FormatBool(userInfo.IsDelete),
 	}
 
 	// 使用循环遍历 map，并将键值对存入 Redis 中

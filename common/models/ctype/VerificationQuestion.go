@@ -7,8 +7,12 @@ import (
 
 // VerificationQuestion 验证问题、答案
 type VerificationQuestion struct {
-	Question string `gorm:"column:question;comment:'验证问题'" json:"question"` // 验证问题
-	Answer   string `gorm:"column:answer;comment:'验证答案'" json:"answer"`     // 验证答案
+	Question1 *string `json:"question1"` // 验证问题
+	Question2 *string `json:"question2"` // 验证问题
+	Question3 *string `json:"question3"` // 验证问题
+	Answer1   *string `json:"answer1"`   // 验证答案
+	Answer2   *string `json:"answer2"`   // 验证答案
+	Answer3   *string `json:"answer3"`   // 验证答案
 }
 
 // Scan 从数据库中检索数据时使用Scan方法

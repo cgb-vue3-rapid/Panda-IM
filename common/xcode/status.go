@@ -117,9 +117,9 @@ func toXCode(grpcStatus *status.Status) Code {
 		return ServiceUnavailable
 	case codes.Unknown:
 		return String(grpcStatus.Message())
+	default:
+		return ServerErr
 	}
-
-	return ServerErr
 }
 
 func CodeFromError(err error) XCode {

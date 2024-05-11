@@ -1,96 +1,111 @@
 package token_manager
 
 import (
+	"akita/panda-im/common/constants"
+	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/pkg/errors"
+	"github.com/zeromicro/go-zero/core/logx"
 	"time"
 )
 
-//type (
-//	TokenOptions struct {
-//		AccessSecret string
-//		AccessExpire int64
-//		Payloads
-//	}
-//
-//	Token struct {
-//		AccessToken  string `json:"access_token"`
-//		AccessExpire int64  `json:"access_expire"`
-//	}
-//
-//	Payloads struct {
-//		UserID   int64  `json:"user_id"`
-//		NickName string `json:"nick_name"`
-//		Role     int32  `json:"role"`
-//		// 添加其他字段
-//	}
-//)
+// CustomClaims /**
+// CustomClaims 自定义声明类型 并内嵌jwt.RegisteredClaims
+// jwt包自带的jwt.RegisteredClaims只包含了官方字段
+// 假设我们这里需要额外记录一个username字段，所以要自定义结构体
+// 如果想要保存更多信息，都可以添加到这个结构体中
+type CustomClaims struct {
+	UserID               int64  `json:"user_id"`
+	Nickname             string `json:"nickname"`
+	Role                 int32  `json:"role"`
+	jwt.RegisteredClaims        // 内嵌标准的声明
+}
 
-type (
-	TokenOptions struct {
-		AccessSecret string
-		AccessExpire int64
-		Fields       map[string]interface{}
+// GenToken 生成JWT
+func GenToken(userId int64, nickname, access, refresh string, role int32) (string, string, error) {
+	accessSecret := []byte(access)
+	refreshSecret := []byte(refresh)
+	// 创建一个我们自己声明的数据
+	// accessToken 的数据
+	accessClaims := CustomClaims{
+		userId,
+		nickname, // 自定义字段
+		role,
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * 10)), // 定义过期时间
+			Issuer:    constants.OrganizationName,                           // 签发人
+			ID:        constants.OrganizationName,                           // 编号
+		},
 	}
 
-	Token struct {
-		AccessToken  string `json:"access_token"`
-		AccessExpire int64  `json:"access_expire"`
+	// refreshToken 的数据
+	refreshClaims := CustomClaims{
+		userId,
+		nickname, // 自定义字段
+		role,
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * constants.JwtExpire * 3)), // 定义过期时间
+			Issuer:    constants.OrganizationName,                                              // 签发人
+			ID:        constants.OrganizationName,                                              // 编号
+		},
 	}
-)
 
-func BuildTokens(opt TokenOptions) (Token, error) {
-	var token Token
-	now := time.Now().Add(-time.Minute).Unix()
-	accessToken, err := genToken(now, opt.AccessSecret, opt.Fields, opt.AccessExpire)
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	// 生成签名字符串
+	accessTokenSigned, err := accessToken.SignedString(accessSecret)
 	if err != nil {
-		return token, err
+		fmt.Println("获取Token失败，Secret错误")
+		return "", "", err
 	}
-	token.AccessToken = accessToken
-	token.AccessExpire = now + opt.AccessExpire
-
-	return token, nil
+	refreshTokenSigned, err := refreshToken.SignedString(refreshSecret)
+	if err != nil {
+		fmt.Println("获取Token失败，Secret错误")
+		return "", "", err
+	}
+	return accessTokenSigned, refreshTokenSigned, nil
 }
 
-func genToken(iat int64, secretKey string, payloads map[string]interface{}, seconds int64) (string, error) {
-	claims := make(jwt.MapClaims)
-	claims["exp"] = iat + seconds
-	claims["iat"] = iat
-	for k, v := range payloads {
-		claims[k] = v
-	}
-	token := jwt.New(jwt.SigningMethodHS256)
-	token.Claims = claims
+func ParseToken(accessTokenString, refreshTokenString, access, refresh string) (*CustomClaims, bool, error) {
+	accessSecret := []byte(access)
+	refreshSecret := []byte(refresh)
 
-	return token.SignedString([]byte(secretKey))
-}
-
-func ParseToken(tokenString, secretKey string) (map[string]interface{}, error) {
-	// 解析 token
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// 检查 token 签名方法是否正确
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("无效令牌")
-		}
-		return []byte(secretKey), nil
+	accessToken, err := jwt.ParseWithClaims(accessTokenString, &CustomClaims{}, func(token *jwt.Token) (i interface{}, err error) {
+		logx.Infof("accessTokenString: %v", accessTokenString)
+		return accessSecret, nil
 	})
 
-	// 检查解析是否出错
+	if claims, ok := accessToken.Claims.(*CustomClaims); ok {
+		if accessToken.Valid {
+			return claims, false, nil
+		} else if !claims.Expired() {
+			// token没过期刷新token
+			logx.Infof("accessToken没过期续期token")
+			return claims, true, nil
+		}
+	}
+
+	refreshToken, err := jwt.ParseWithClaims(refreshTokenString, &CustomClaims{}, func(token *jwt.Token) (i interface{}, err error) {
+		logx.Infof("refreshTokenString: %v", refreshTokenString)
+		return refreshSecret, nil
+	})
+
 	if err != nil {
-		return nil, err
+		logx.Errorf("refreshToken解析失败：%v", err)
+		return nil, false, err
 	}
 
-	// 检查 token 是否有效
-	if !token.Valid {
-		return nil, err
+	if claims, ok := refreshToken.Claims.(*CustomClaims); ok && refreshToken.Valid {
+		if !claims.Expired() {
+			// refreshToken没过期刷新token
+			logx.Info("refreshToken没过期续期token")
+			return claims, true, nil
+		}
 	}
+	logx.Errorf("两个token全部过期，需要重新登陆")
+	return nil, false, errors.New("invalid token")
+}
 
-	// 解析 token 中的声明数据
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, err
-	}
-
-	// 返回声明数据
-	return claims, nil
+func (c *CustomClaims) Expired() bool {
+	return c.ExpiresAt.Unix() < time.Now().Unix()
 }
