@@ -3,12 +3,10 @@ package Auth
 import (
 	"akita/panda-im/common/constants"
 	"akita/panda-im/common/util/rds_cache"
-	"akita/panda-im/service/auth/code"
 	"akita/panda-im/service/auth/internal/svc"
 	"akita/panda-im/service/auth/internal/types"
 	"context"
 	"github.com/zeromicro/go-zero/core/logx"
-	"time"
 )
 
 type AuthenticateHandlerPostLogic struct {
@@ -31,10 +29,7 @@ func (l *AuthenticateHandlerPostLogic) AuthenticateHandlerPost(req *types.Authen
 	userId := l.ctx.Value(constants.UserId).(int64)
 	refreshToken := l.ctx.Value(constants.RefreshToken).(string)
 
-	ex := rds_cache.CacheSetNxEx(userId, refreshToken, constants.PrefixUserLoginCache, int(time.Hour*constants.JwtExpire*3/time.Second), l.svcCtx.BizRedis)
+	_ = rds_cache.CacheSetNxEx(userId, refreshToken, constants.PrefixUserLoginCache, constants.JwtExpire, l.svcCtx.BizRedis)
 
-	if !ex {
-		return nil, code.ErrAuthenticate
-	}
 	return &types.AuthenticateResponse{Message: "认证成功"}, nil
 }

@@ -12,7 +12,6 @@ import (
 	"akita/panda-im/service/user/rpc/user"
 	"context"
 	"github.com/zeromicro/go-zero/core/logx"
-	"time"
 )
 
 type LoginLogic struct {
@@ -65,7 +64,9 @@ func (l *LoginLogic) Login(req *types.LoginRequest) (resp *types.LoginResponse, 
 		return nil, xcode.TokenGenerateErr
 	}
 
-	_ = rds_cache.CacheTokenByUserID(u.UserId, RefreshToken, constants.PrefixUserLoginCache, l.svcCtx.BizRedis, int(time.Hour*constants.JwtExpire*3/time.Second))
+	//_ = rds_cache.CacheTokenByUserID(u.UserId, RefreshToken, constants.PrefixUserLoginCache, l.svcCtx.BizRedis, int(time.Hour*constants.JwtExpire*3/time.Second))
+
+	_ = rds_cache.CacheTokenByUserID(u.UserId, RefreshToken, constants.PrefixUserLoginCache, l.svcCtx.BizRedis, constants.JwtExpire)
 
 	return &types.LoginResponse{
 		JWT: types.JWT{

@@ -4,7 +4,7 @@ package constants
 jwt相关
 */
 // 604800
-const JwtExpire = 24              // JWT的过期时间
+const JwtExpire = 604800          // JWT的过期时间
 const OrganizationName = " akita" // 签发人
 
 /*

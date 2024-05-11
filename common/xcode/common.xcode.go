@@ -18,10 +18,10 @@ var (
 //通用错误码
 
 var (
-	TokenIsEmpty     = New(101, "token is empty")
-	TokenFormatErr   = New(102, "token format error")
-	TokenParseErr    = New(103, "token parse error")
-	TokenExpired     = New(104, "token expired")
-	TokenGenerateErr = New(105, "token generate error")
-	TokenInvalid     = New(106, "token invalid")
+	TokenIsEmpty     = New(101, "令牌为空")
+	TokenFormatErr   = New(102, "令牌格式错误")
+	TokenParseErr    = New(103, "令牌解析错误")
+	TokenExpired     = New(104, "令牌已过期")
+	TokenGenerateErr = New(105, "令牌生成错误")
+	TokenInvalid     = New(106, "令牌无效")
 )

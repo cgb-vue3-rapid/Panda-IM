@@ -51,15 +51,13 @@ func (m *JwtAuthMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 				httpx.ErrorCtx(r.Context(), w, xcode.TokenGenerateErr)
 				return
 			}
-
-			r = r.WithContext(context.WithValue(r.Context(), constants.UserId, parseToken.UserID))
-			r = r.WithContext(context.WithValue(r.Context(), constants.AccessToken, parts[0]))
-			r = r.WithContext(context.WithValue(r.Context(), constants.RefreshToken, parts[1]))
-
-			next(w, r)
-			return
 		}
-		logx.Errorf("重新登陆: %v", err)
-		httpx.ErrorCtx(r.Context(), w, xcode.TokenInvalid)
+		r = r.WithContext(context.WithValue(r.Context(), constants.UserId, parseToken.UserID))
+		r = r.WithContext(context.WithValue(r.Context(), constants.AccessToken, parts[0]))
+		r = r.WithContext(context.WithValue(r.Context(), constants.RefreshToken, parts[1]))
+
+		next(w, r)
+		//logx.Errorf("重新登陆: %v", err)
+		//httpx.ErrorCtx(r.Context(), w, xcode.TokenInvalid)
 	}
 }

@@ -32,24 +32,24 @@ func GenToken(userId int64, nickname, access, refresh string, role int32) (strin
 		nickname, // 自定义字段
 		role,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * 10)), // 定义过期时间
-			Issuer:    constants.OrganizationName,                           // 签发人
-			ID:        constants.OrganizationName,                           // 编号
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * constants.JwtExpire)), // 定义过期时间
+			Issuer:    constants.OrganizationName,                                            // 签发人
+			ID:        constants.OrganizationName,                                            // 编号
 		},
 	}
-
+	logx.Infof(accessClaims.ExpiresAt.String())
 	// refreshToken 的数据
 	refreshClaims := CustomClaims{
 		userId,
 		nickname, // 自定义字段
 		role,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * constants.JwtExpire * 3)), // 定义过期时间
-			Issuer:    constants.OrganizationName,                                              // 签发人
-			ID:        constants.OrganizationName,                                              // 编号
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * constants.JwtExpire * 3)), // 定义过期时间
+			Issuer:    constants.OrganizationName,                                                // 签发人
+			ID:        constants.OrganizationName,                                                // 编号
 		},
 	}
-
+	logx.Infof(refreshClaims.ExpiresAt.String())
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 	// 生成签名字符串
@@ -79,8 +79,7 @@ func ParseToken(accessTokenString, refreshTokenString, access, refresh string) (
 		if accessToken.Valid {
 			return claims, false, nil
 		} else if !claims.Expired() {
-			// token没过期刷新token
-			logx.Infof("accessToken没过期续期token")
+			logx.Infof("accessToken过期续期token")
 			return claims, true, nil
 		}
 	}
@@ -107,5 +106,6 @@ func ParseToken(accessTokenString, refreshTokenString, access, refresh string) (
 }
 
 func (c *CustomClaims) Expired() bool {
+	logx.Infof("c.ExpiresAt: %v", c.ExpiresAt)
 	return c.ExpiresAt.Unix() < time.Now().Unix()
 }
