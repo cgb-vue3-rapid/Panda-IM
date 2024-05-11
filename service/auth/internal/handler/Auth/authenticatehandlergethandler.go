@@ -8,10 +8,10 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func UserInfoHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func AuthenticateHandlerGetHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l := Auth.NewUserInfoLogic(r.Context(), svcCtx)
-		resp, err := l.UserInfo()
+		l := Auth.NewAuthenticateHandlerGetLogic(r.Context(), svcCtx)
+		resp, err := l.AuthenticateHandlerGet()
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {
