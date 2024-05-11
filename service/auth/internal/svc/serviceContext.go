@@ -1,18 +1,21 @@
 package svc
 
 import (
-	"akita/panda-im/common/interceptors"
+	"akita/panda-im/common/util/interceptors"
 	"akita/panda-im/service/auth/internal/config"
+	"akita/panda-im/service/auth/internal/middleware"
 	"akita/panda-im/service/user/rpc/user"
 	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/zeromicro/go-zero/rest"
 	"github.com/zeromicro/go-zero/zrpc"
 )
 
 type ServiceContext struct {
 	Config config.Config
 	//Orm      *gorm.DB
-	BizRedis *redis.Redis
-	UserRPC  user.User
+	BizRedis          *redis.Redis
+	UserRPC           user.User
+	JwtAuthMiddleware rest.Middleware
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -30,7 +33,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	return &ServiceContext{
 		Config: c,
 		//Orm:      conn,
-		BizRedis: redis.MustNewRedis(c.BizRedis),
-		UserRPC:  user.NewUser(userRPC),
+		BizRedis:          redis.MustNewRedis(c.BizRedis),
+		JwtAuthMiddleware: middleware.NewJwtAuthMiddleware(c).Handle,
+		UserRPC:           user.NewUser(userRPC),
 	}
 }

@@ -1,22 +1,18 @@
 package logic
 
 import (
-	"akita/panda-im/common/encrypt"
-	"akita/panda-im/common/token_manager"
+	"akita/panda-im/common/constants"
+	"akita/panda-im/common/util/encrypt"
+	"akita/panda-im/common/util/rds_cache"
+	"akita/panda-im/common/util/token_manager"
+	"akita/panda-im/common/xcode"
 	"akita/panda-im/service/auth/code"
 	"akita/panda-im/service/auth/internal/svc"
 	"akita/panda-im/service/auth/internal/types"
 	"akita/panda-im/service/user/rpc/user"
 	"context"
-	"fmt"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"strconv"
-
 	"github.com/zeromicro/go-zero/core/logx"
-)
-
-const (
-	prefixTokenCache = "panda:user:login:id:%s"
+	"time"
 )
 
 type LoginLogic struct {
@@ -47,7 +43,7 @@ func (l *LoginLogic) Login(req *types.LoginRequest) (resp *types.LoginResponse, 
 	mobile, err := encrypt.EncMobile(req.Mobile)
 	if err != nil {
 		logx.Errorf("手机号加密失败: %s error: %v", req.Mobile, err)
-		return nil, code.ErrRegisterFailed
+		return nil, code.ErrLogin
 	}
 
 	// 如果手机号没注册，就对密码进行加密处理
@@ -62,38 +58,20 @@ func (l *LoginLogic) Login(req *types.LoginRequest) (resp *types.LoginResponse, 
 		return nil, err
 	}
 
-	////  生成token
-	//token, err := token_manager.GenerateToken(token_manager.TokenOptions{
-	//	AccessSecret: l.svcCtx.Config.Auth.AccessSecret,
-	//	AccessExpire: l.svcCtx.Config.Auth.AccessExpire,
-	//	Payloads: token_manager.Payloads{
-	//		UserID:   u.UserId,
-	//		NickName: u.Nickname,
-	//		Role:     u.Role,
-	//	},
-	//})
+	//生成访问令牌
+	AccessToken, RefreshToken, err := token_manager.GenToken(u.UserId, u.Nickname, l.svcCtx.Config.Token.AccessSecret, l.svcCtx.Config.Token.RefreshSecret, u.Role)
 
-	// 生成访问令牌,将用户ID作为JWT的payload
-	token, err := token_manager.BuildTokens(token_manager.TokenOptions{
-		AccessSecret: l.svcCtx.Config.Auth.AccessSecret,
-		AccessExpire: l.svcCtx.Config.Auth.AccessExpire,
-		Fields: map[string]interface{}{
-			"userId":   u.UserId,
-			"role":     u.Role,
-			"nickname": u.Nickname,
+	if err != nil {
+		return nil, xcode.TokenGenerateErr
+	}
+
+	_ = rds_cache.CacheTokenByUserID(u.UserId, RefreshToken, constants.PrefixUserLoginCache, l.svcCtx.BizRedis, int(time.Hour*constants.JwtExpire*3/time.Second))
+
+	return &types.LoginResponse{
+		JWT: types.JWT{
+			AccessToken:  AccessToken,
+			RefreshToken: AccessToken + " " + RefreshToken,
 		},
-	})
-
-	_ = CacheToken(u.UserId, token.AccessToken, l.svcCtx.BizRedis)
-
-	return &types.LoginResponse{Token: types.Token{
-		AccessToken:  token.AccessToken,
-		AccessExpire: token.AccessExpire,
-	}, Message: "登录成功"}, nil
-}
-
-// CacheToken 缓存验证码
-func CacheToken(id int64, token string, rds *redis.Redis) error {
-	key := fmt.Sprintf(prefixTokenCache, strconv.Itoa(int(id)))
-	return rds.Setex(key, token, expireActivation)
+		Message: "登录成功",
+	}, nil
 }

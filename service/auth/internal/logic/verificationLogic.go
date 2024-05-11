@@ -1,25 +1,22 @@
 package logic
 
 import (
-	"akita/panda-im/common/util"
+	"akita/panda-im/common/constants"
+	"akita/panda-im/common/util/random_munber"
+	"akita/panda-im/common/util/rds_cache"
 	"akita/panda-im/service/auth/code"
-	"context"
-	"fmt"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"strconv"
-	"strings"
-	"time"
-
 	"akita/panda-im/service/auth/internal/svc"
 	"akita/panda-im/service/auth/internal/types"
+	"context"
+	"strings"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
 var (
-	prefixVerificationCount = "biz#verification#count#%s" // 验证码计数的 Redis 键前缀
-	verificationLimitPerDay = 100                         // 每日发送验证码的上限
-	expireActivation        = 60 * 100000                 // 验证码缓存失效时间，单位为秒
+// prefixVerificationCount = "biz#verification#count#%s" // 验证码计数的 Redis 键前缀
+// verificationLimitPerDay = 100                         // 每日发送验证码的上限
+// expireActivation        = 60 * 100000                 // 验证码缓存失效时间，单位为秒
 )
 
 type VerificationLogic struct {
@@ -50,22 +47,22 @@ func (l *VerificationLogic) Verification(req *types.VerificationRequest) (resp *
 	}
 
 	// 获取今日发送验证码次数
-	count, err := l.getVerificationCount(req.Mobile)
+	count, err := rds_cache.GetVerificationCountByMobile(req.Mobile, constants.PrefixVerificationCount, l.svcCtx.BizRedis)
 	if err != nil {
-		logx.Error(l.ctx, "getVerificationCount mobile: %s error: %v", req.Mobile, err)
+		logx.Error(l.ctx, "GetVerificationCountByMobile mobile: %s error: %v", req.Mobile, err)
 	}
-	if count > verificationLimitPerDay {
+	if count > constants.VerificationLimitPerDay {
 		// 发送验证码次数超过上限
 		return nil, code.ErrVerificationLimitExceeded
 	}
 
 	// 生成或获取已存在的验证码
-	verifyCode, err := getActivationCache(req.Mobile, l.svcCtx.BizRedis)
+	verifyCode, err := rds_cache.GetActivationCacheByMobile(req.Mobile, constants.PrefixActivation, l.svcCtx.BizRedis)
 	if err != nil {
-		logx.Errorf("getActivationCache mobile: %s error: %v", req.Mobile, err)
+		logx.Errorf("etActivationCacheByMobile mobile: %s error: %v", req.Mobile, err)
 	}
 	if len(verifyCode) == 0 {
-		verifyCode = util.RandomNumeric(6)
+		verifyCode = random_munber.RandomNumeric(6)
 	}
 
 	//// 发送验证码
@@ -80,14 +77,14 @@ func (l *VerificationLogic) Verification(req *types.VerificationRequest) (resp *
 	}
 
 	// 缓存验证码
-	err = saveActivationCache(req.Mobile, verifyCode, l.svcCtx.BizRedis)
+	err = rds_cache.SaveActivationCacheByMobile(req.Mobile, verifyCode, constants.PrefixActivation, l.svcCtx.BizRedis, constants.VerificationExpire)
 	if err != nil {
 		logx.Error(l.ctx, "缓存验证码失败: %s error: %v", req.Mobile, err)
 		return nil, code.ErrSendSmsFailed
 	}
 
 	// 增加验证码发送次数计数
-	err = l.incrVerificationCount(req.Mobile)
+	err = rds_cache.IncrVerificationCountByMobile(req.Mobile, constants.PrefixVerificationCount, l.svcCtx.BizRedis)
 	if err != nil {
 		logx.Error(l.ctx, "发送次数计数失败: %s error: %v", req.Mobile, err)
 	}
@@ -96,48 +93,4 @@ func (l *VerificationLogic) Verification(req *types.VerificationRequest) (resp *
 		Message: "发送成功",
 	}, nil
 
-}
-
-// getVerificationCount 获取今日验证码发送次数
-func (l *VerificationLogic) getVerificationCount(mobile string) (int, error) {
-	key := fmt.Sprintf(prefixVerificationCount, mobile)
-	val, err := l.svcCtx.BizRedis.Get(key)
-	if err != nil {
-		return 0, err
-	}
-	if len(val) == 0 {
-		return 0, nil
-	}
-
-	return strconv.Atoi(val)
-}
-
-// incrVerificationCount 增加验证码发送次数计数
-func (l *VerificationLogic) incrVerificationCount(mobile string) error {
-	key := fmt.Sprintf(prefixVerificationCount, mobile)
-	_, err := l.svcCtx.BizRedis.Incr(key)
-	if err != nil {
-		return err
-	}
-
-	return l.svcCtx.BizRedis.Expireat(key, util.EndOfDay(time.Now()).Unix())
-}
-
-// getActivationCache 获取验证码缓存
-func getActivationCache(mobile string, rds *redis.Redis) (string, error) {
-	key := fmt.Sprintf(prefixActivation, mobile)
-	return rds.Get(key)
-}
-
-// saveActivationCache 缓存验证码
-func saveActivationCache(mobile, code string, rds *redis.Redis) error {
-	key := fmt.Sprintf(prefixActivation, mobile)
-	return rds.Setex(key, code, expireActivation)
-}
-
-// delActivationCache 删除验证码缓存
-func delActivationCache(mobile string, rds *redis.Redis) error {
-	key := fmt.Sprintf(prefixActivation, mobile)
-	_, err := rds.Del(key)
-	return err
 }

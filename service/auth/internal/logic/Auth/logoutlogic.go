@@ -1,22 +1,14 @@
 package Auth
 
 import (
+	"akita/panda-im/common/constants"
+	"akita/panda-im/common/util/rds_cache"
 	"akita/panda-im/service/auth/code"
-	"akita/panda-im/service/user/rpc/user"
-	"context"
-	"encoding/json"
-	"fmt"
-	"github.com/zeromicro/go-zero/core/stores/redis"
-	"strconv"
-
 	"akita/panda-im/service/auth/internal/svc"
 	"akita/panda-im/service/auth/internal/types"
-
+	"akita/panda-im/service/user/rpc/user"
+	"context"
 	"github.com/zeromicro/go-zero/core/logx"
-)
-
-const (
-	prefixTokenCache = "panda:user:login:id:%s"
 )
 
 type LogoutLogic struct {
@@ -35,28 +27,15 @@ func NewLogoutLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LogoutLogi
 
 func (l *LogoutLogic) Logout() (resp *types.LogoutResponse, err error) {
 	//获取用户ID
-	userID, err := l.ctx.Value("userId").(json.Number).Int64()
-	if err != nil {
-		return nil, code.ErrTokenInvalid
-	}
+	userId := l.ctx.Value(constants.UserId).(int64)
 
-	_, err = l.svcCtx.UserRPC.Logout(l.ctx, &user.LogoutRequest{UserId: userID})
+	_, err = l.svcCtx.UserRPC.Logout(l.ctx, &user.LogoutRequest{UserId: userId})
 	if err != nil {
 		return nil, code.ErrUserNotExist
 	}
 
 	// 删除缓存
-	_ = deleteToken(userID, l.svcCtx.BizRedis)
+	_ = rds_cache.DeleteTokenByUserID(userId, constants.PrefixUserLoginCache, l.svcCtx.BizRedis)
 
 	return &types.LogoutResponse{Message: "登出成功"}, nil
-}
-
-// deleteToken 删除缓存
-func deleteToken(id int64, rds *redis.Redis) error {
-	key := fmt.Sprintf(prefixTokenCache, strconv.Itoa(int(id)))
-	_, err := rds.Del(key)
-	if err != nil {
-		return err
-	}
-	return nil
 }

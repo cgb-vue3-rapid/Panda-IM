@@ -1,7 +1,9 @@
 package logic
 
 import (
-	"akita/panda-im/common/encrypt"
+	"akita/panda-im/common/constants"
+	"akita/panda-im/common/util/encrypt"
+	"akita/panda-im/common/util/rds_cache"
 	"akita/panda-im/service/auth/code"
 	"akita/panda-im/service/auth/internal/svc"
 	"akita/panda-im/service/auth/internal/types"
@@ -12,10 +14,6 @@ import (
 	"strings"
 
 	"github.com/zeromicro/go-zero/core/logx"
-)
-
-const (
-	prefixActivation = "biz#activation#%s"
 )
 
 type RegisterLogic struct {
@@ -87,13 +85,14 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (resp *types.Regist
 	})
 
 	if err != nil {
-		_ = delActivationCache(req.Mobile, l.svcCtx.BizRedis)
+		_ = rds_cache.DelActivationCacheByMobile(req.Mobile, constants.PrefixActivation, l.svcCtx.BizRedis)
 
 		logx.Errorf("注册失败: %s error: %v", req.Mobile, err)
 		return nil, err
 	}
 
-	_ = delActivationCache(req.Mobile, l.svcCtx.BizRedis)
+	//  删除验证码缓存
+	_ = rds_cache.DelActivationCacheByMobile(req.Mobile, constants.PrefixActivation, l.svcCtx.BizRedis)
 
 	return &types.RegisterResponse{
 		UserID:  registerResp.UserId,
@@ -104,7 +103,7 @@ func (l *RegisterLogic) Register(req *types.RegisterRequest) (resp *types.Regist
 // checkVerificationCode 函数用于检查验证码是否正确
 func checkVerificationCode(rds *redis.Redis, mobile, c string) error {
 	// 从缓存中获取验证码
-	cacheCode, err := getActivationCache(mobile, rds)
+	cacheCode, err := rds_cache.GetActivationCacheByMobile(mobile, constants.PrefixActivation, rds)
 	if err != nil {
 		return code.ErrVerificationCodeNotExist
 	}
