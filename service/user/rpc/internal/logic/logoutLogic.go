@@ -28,7 +28,7 @@ func (l *LogoutLogic) Logout(in *pb.LogoutRequest) (*pb.LogoutResponse, error) {
 	// todo: add your logic here and delete this line
 
 	// err == nil 表示用户存在
-	_, err := l.svcCtx.UserModelDao.FindByID(l.ctx, in.UserId)
+	_, err := l.svcCtx.UserDao.FindByID(l.ctx, in.UserId)
 	if err != nil {
 		return nil, code.ErrUserNotExist
 	}

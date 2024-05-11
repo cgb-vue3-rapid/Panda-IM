@@ -26,7 +26,7 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 func (l *LoginLogic) Login(in *pb.LoginRequest) (*pb.LoginResponse, error) {
 	// todo: add your logic here and delete this line
 	// 1. 手机号是否存在
-	u, err := l.svcCtx.UserModelDao.FindByMobile(l.ctx, in.Mobile)
+	u, err := l.svcCtx.UserDao.FindByMobile(l.ctx, in.Mobile)
 	if err != nil {
 		return nil, code.ErrMobileExist
 	}

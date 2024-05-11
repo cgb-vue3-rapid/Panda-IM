@@ -30,10 +30,11 @@ func (l *RegisterLogic) Register(in *pb.RegisterRequest) (*pb.RegisterResponse, 
 	// todo: add your logic here and delete this line
 
 	// 查询手机号是否已注册
-	u, err := l.svcCtx.UserModelDao.FindByMobile(l.ctx, in.Mobile)
+	u, err := l.svcCtx.UserDao.FindByMobile(l.ctx, in.Mobile)
 
 	// 手机号已注册
 	if err == nil && u.ID > 0 {
+		logx.Errorf("[Register] mobile: %s, already exist", in.Mobile)
 		return nil, code.ErrMobileExist
 	}
 
@@ -43,8 +44,28 @@ func (l *RegisterLogic) Register(in *pb.RegisterRequest) (*pb.RegisterResponse, 
 		PassWord: in.Password,
 	}
 
-	err = l.svcCtx.UserModelDao.Insert(l.ctx, &userModel)
+	// 插入数据库
+	err = l.svcCtx.UserDao.Insert(l.ctx, &userModel)
 	if err != nil {
+		logx.Errorf("[Register] insert user fail: %v", err)
+		return nil, code.ErrRegisterFail
+	}
+
+	// 初始化用户配置表
+	userConfig := &entity.UserConfModel{
+		UserId:           userModel.ID,
+		Oline:            false,
+		FriendsOnline:    false,
+		AllSounds:        true,
+		SecureLink:       true,
+		SavePwd:          false,
+		SearchUser:       1,
+		VerificationType: 2,
+	}
+
+	// 创建用户配置
+	if err := l.svcCtx.Orm.WithContext(l.ctx).Create(userConfig).Error; err != nil {
+		logx.Errorf("[Register] create user config fail: %v", err)
 		return nil, code.ErrRegisterFail
 	}
 

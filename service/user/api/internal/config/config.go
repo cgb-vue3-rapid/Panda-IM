@@ -12,6 +12,14 @@ type Config struct {
 		Endpoints string
 		TTL       int64
 	}
+	Token struct {
+		AccessSecret  string
+		RefreshSecret string
+	}
+	//Auth struct {
+	//	AccessSecret string
+	//	AccessExpire int64
+	//}
 	DB struct {
 		DataSource   string
 		MaxOpenConns int `json:",default=10"`   // 最大连接数

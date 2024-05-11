@@ -1,6 +1,12 @@
-Name: user.server
+Name: user.api
 Host: 0.0.0.0
-Port: 8889
+Port: 8001
+Token:
+  AccessSecret: panda@akita@AccessSecret
+  RefreshSecret: panda@akita@RefreshSecret
+Auth:
+  AccessSecret: panda@akita@AccessSecret
+  AccessExpire: 604800
 ETCD:
   Endpoints: 192.168.30.130:2379
   TTL: 10

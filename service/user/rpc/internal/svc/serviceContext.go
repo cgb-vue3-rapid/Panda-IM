@@ -11,11 +11,11 @@ import (
 )
 
 type ServiceContext struct {
-	Config       config.Config
-	Orm          *gorm.DB
-	BizRedis     *redis.Redis
-	UserModel    entity.UserModel
-	UserModelDao *entity.UserModelDao
+	Config    config.Config
+	Orm       *gorm.DB
+	BizRedis  *redis.Redis
+	UserModel entity.UserModel
+	UserDao   *entity.UserDao
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -28,9 +28,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 
 	return &ServiceContext{
-		Config:       c,
-		Orm:          conn,
-		UserModelDao: entity.NewUserModelDao(conn),
-		BizRedis:     redis.MustNewRedis(c.BizRedis),
+		Config:   c,
+		Orm:      conn,
+		UserDao:  entity.NewUserDao(conn),
+		BizRedis: redis.MustNewRedis(c.BizRedis),
 	}
 }

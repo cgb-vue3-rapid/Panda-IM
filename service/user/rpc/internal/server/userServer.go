@@ -41,3 +41,13 @@ func (s *UserServer) GetUserInfoByID(ctx context.Context, in *pb.UserInfoRequest
 	l := logic.NewGetUserInfoByIDLogic(ctx, s.svcCtx)
 	return l.GetUserInfoByID(in)
 }
+
+func (s *UserServer) GetUserConfigByID(ctx context.Context, in *pb.UserConfigRequest) (*pb.UserConfigResponse, error) {
+	l := logic.NewGetUserConfigByIDLogic(ctx, s.svcCtx)
+	return l.GetUserConfigByID(in)
+}
+
+func (s *UserServer) GetFriendsInfoByID(ctx context.Context, in *pb.FriendsInfoRequest) (*pb.FriendsInfoResponse, error) {
+	l := logic.NewGetFriendsInfoByIDLogic(ctx, s.svcCtx)
+	return l.GetFriendsInfoByID(in)
+}

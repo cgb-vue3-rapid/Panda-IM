@@ -1,5 +1,5 @@
 Name: user.rpc
-ListenOn: 0.0.0.0:8080
+ListenOn: 0.0.0.0:3000
 Etcd:
   Hosts:
     - 192.168.30.130:2379
@@ -14,3 +14,7 @@ DB:
   MaxOpenConns: 100
   MaxLifeTime: 14400
   Mode: info
+Log:
+  Encoding: plain
+  TimeFormat: 2006-01-02 15:04:05
+  Stat: false

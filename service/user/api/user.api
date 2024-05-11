@@ -1,33 +1,94 @@
 syntax = "v1"
 
-type UserInfonRequest {
-	UserID int64  `json:"user_id"`
-	Role   int32  `json:"role"`
-	Mobile string `json:"mobile,optional"`
-}
-
 type UserInfoResponse {
 	UserID   int64  `json:"user_id"`
 	Nickname string `json:"nickname"`
 	Mobile   string `json:"mobile"`
 	Avatar   string `json:"avatar"`
-	Role     int32  `json:"role"`
-	Gender   int    `json:"gender"`
+	Gender   string `json:"gender"`
 	Addr     string `json:"addr"`
 	Abstract string `json:"abstract"`
-	//       CreatedAt  string `json:"created_at"`
-	//       UpdatedAt  string `json:"updated_at"`
-	//       DeletedAt  string `json:"deleted_at"`
-	//       Is_Deleted bool   `json:"is_deleted"`
+	Message  string `json:"message"`
+}
+
+type VerificationQuestion {
+	Question1 string `json:"question1,optional" user_config:"question1"`
+	Question2 string `json:"question2,optional" user_config:"question2"`
+	Question3 string `json:"question3,optional" user_config:"question3"`
+	Answer1   string `json:"answer1,optional" user_config:"answer1"`
+	Answer2   string `json:"answer2,optional" user_config:"answer2"`
+	Answer3   string `json:"answer3,optional" user_config:"answer3"`
+}
+
+type UserConfigResponse {
+	ID                   int64                 `json:"id"`
+	UserID               int64                 `json:"user_id"`
+	Nickname             string                `json:"nickname"`
+	RecallMessage        string                `json:"recall_message"`
+	FriendsOnline        bool                  `json:"friends_online"`
+	AllSounds            bool                  `json:"all_sounds"`
+	SecureLink           bool                  `json:"secure_link"`
+	SavePwd              bool                  `json:"save_pwd"`
+	SearchUser           int8                  `json:"search_user"`
+	VerificationType     int8                  `json:"verification_type"`
+	VerificationQuestion *VerificationQuestion `json:"verification_question"`
+	Message              string                `json:"message"`
+}
+
+// 用户配置更新
+type UserConfigUpdateRequest {
+	RecallMessage        *string               `json:"recall_message,optional" user_config:"recall_message"`
+	Avatar               *string               `json:"avatar,optional" user:"avatar"`
+	Gender               *int32                `json:"gender,optional" user:"gender"`
+	Addr                 *string               `json:"addr,optional" user:"addr"`
+	Abstract             *string               `json:"abstract,optional" user:"abstract"`
+	FriendsOnline        *bool                 `json:"friends_online,optional" user_config:"friends_online"`
+	AllSounds            *bool                 `json:"all_sounds,optional" user_config:"all_sounds"`
+	SecureLink           *bool                 `json:"secure_link,optional" user_config:"secure_link"`
+	SavePwd              *bool                 `json:"savePwd,optional" user_config:"save_pwd"`
+	SearchUser           *int8                 `json:"search_user,optional" user_config:"search_user"`
+	VerificationType     *int8                 `json:"verification_type,optional" user_config:"verification_type"`
+	VerificationQuestion *VerificationQuestion `json:"verification_question,optional" user_config:"verification_question"`
+}
+
+type UserConfigUpdateResponse {
 	Message string `json:"message"`
 }
 
+type FriendInfoRequest {
+	UserID   int64 `json:"user_id"`
+	Role     int8  `json:"role"`
+	FriendID int64 `json:"friend_id"`
+}
+
+type FriendInfoResponse {
+	UserID   int64   `json:"user_id"`
+	Nickname string  `json:"nickname"`
+	Abstract *string `json:"abstract"`
+	Avatar   *string `json:"avatar,"`
+	Gender   *int32  `json:"gender"`
+	Addr     *string `json:"addr"`
+	Notice   string  `json:"notice"`
+}
+
 @server (
-	prefix: /v1/api/user // 设置路由前缀
+	prefix:     /v1/api/user // 设置路由前缀
+	middleware: JwtAuthMiddleware
+	group:      Auth
+// jwt:    Auth // 使用 JWT 验证
 )
 service user {
 	// 用户信息请求处理程序
 	@handler UserInfoHandler
-	get /userInfo (UserInfonRequest) returns (UserInfoResponse)
+	get /userInfo returns (UserInfoResponse)
+
+	@handler UserConfigHandler
+	get /userConfig returns (UserConfigResponse)
+
+	@handler UserConfigUpdateHandler
+	post /userConfigUpdate (UserConfigUpdateRequest) returns (UserConfigUpdateResponse)
+
+	@handler FriendInfoHandler
+	get /friendInfo (FriendInfoRequest) returns (FriendInfoResponse)
 }
 

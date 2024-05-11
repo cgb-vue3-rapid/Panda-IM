@@ -1,10 +1,11 @@
 package main
 
 import (
-	"akita/panda-im/common/interceptors"
+	"akita/panda-im/common/util/interceptors"
 	"context"
 	"flag"
 	"github.com/zeromicro/go-zero/core/logc"
+	"github.com/zeromicro/go-zero/core/logx"
 
 	"akita/panda-im/service/user/rpc/internal/config"
 	"akita/panda-im/service/user/rpc/internal/server"
@@ -34,9 +35,10 @@ func main() {
 			reflection.Register(grpcServer)
 		}
 	})
+	logx.SetUp(c.Log)
 	defer s.Stop()
 	// 自定义拦截器
 	s.AddUnaryInterceptors(interceptors.ServerErrorInterceptor())
-	logc.Infof(context.Background(), "User服务启动成功，运行在 %s\n", c.ListenOn)
+	logc.Infof(context.Background(), "UserRPC服务启动成功，运行在 %s\n", c.ListenOn)
 	s.Start()
 }

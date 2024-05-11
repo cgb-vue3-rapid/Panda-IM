@@ -13,20 +13,27 @@ import (
 )
 
 type (
-	LoginRequest     = pb.LoginRequest
-	LoginResponse    = pb.LoginResponse
-	LogoutRequest    = pb.LogoutRequest
-	LogoutResponse   = pb.LogoutResponse
-	RegisterRequest  = pb.RegisterRequest
-	RegisterResponse = pb.RegisterResponse
-	UserInfoRequest  = pb.UserInfoRequest
-	UserInfoResponse = pb.UserInfoResponse
+	FriendsInfoRequest   = pb.FriendsInfoRequest
+	FriendsInfoResponse  = pb.FriendsInfoResponse
+	LoginRequest         = pb.LoginRequest
+	LoginResponse        = pb.LoginResponse
+	LogoutRequest        = pb.LogoutRequest
+	LogoutResponse       = pb.LogoutResponse
+	RegisterRequest      = pb.RegisterRequest
+	RegisterResponse     = pb.RegisterResponse
+	UserConfigRequest    = pb.UserConfigRequest
+	UserConfigResponse   = pb.UserConfigResponse
+	UserInfoRequest      = pb.UserInfoRequest
+	UserInfoResponse     = pb.UserInfoResponse
+	VerificationQuestion = pb.VerificationQuestion
 
 	User interface {
 		Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 		Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 		Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
 		GetUserInfoByID(ctx context.Context, in *UserInfoRequest, opts ...grpc.CallOption) (*UserInfoResponse, error)
+		GetUserConfigByID(ctx context.Context, in *UserConfigRequest, opts ...grpc.CallOption) (*UserConfigResponse, error)
+		GetFriendsInfoByID(ctx context.Context, in *FriendsInfoRequest, opts ...grpc.CallOption) (*FriendsInfoResponse, error)
 	}
 
 	defaultUser struct {
@@ -58,4 +65,14 @@ func (m *defaultUser) Logout(ctx context.Context, in *LogoutRequest, opts ...grp
 func (m *defaultUser) GetUserInfoByID(ctx context.Context, in *UserInfoRequest, opts ...grpc.CallOption) (*UserInfoResponse, error) {
 	client := pb.NewUserClient(m.cli.Conn())
 	return client.GetUserInfoByID(ctx, in, opts...)
+}
+
+func (m *defaultUser) GetUserConfigByID(ctx context.Context, in *UserConfigRequest, opts ...grpc.CallOption) (*UserConfigResponse, error) {
+	client := pb.NewUserClient(m.cli.Conn())
+	return client.GetUserConfigByID(ctx, in, opts...)
+}
+
+func (m *defaultUser) GetFriendsInfoByID(ctx context.Context, in *FriendsInfoRequest, opts ...grpc.CallOption) (*FriendsInfoResponse, error) {
+	client := pb.NewUserClient(m.cli.Conn())
+	return client.GetFriendsInfoByID(ctx, in, opts...)
 }

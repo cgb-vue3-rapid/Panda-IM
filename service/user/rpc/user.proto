@@ -8,22 +8,72 @@ service User {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc GetUserInfoByID(UserInfoRequest) returns (UserInfoResponse);
+  rpc GetUserConfigByID(UserConfigRequest) returns (UserConfigResponse);
+    rpc GetFriendsInfoByID(FriendsInfoRequest) returns (FriendsInfoResponse);
+//  rpc UpdateUserConfigByID(UserConfigUpdateRequest) returns (UserConfigUpdateResponse);
 //  rpc SendSms(SendSmsRequest) returns (SendSmsResponse);
 }
 
-//message UserInfo {
-//  int64 userId = 1;
-//  string nickname = 2;
-//  string mobile = 3;
-//  string avatar = 4;
-//  int32 role = 7;
-//  string create_at = 5;
-//  string update_at = 6;
-//  int32 gender = 8;
-//  string abstract = 9;
-//  string ip  = 10;
-//  string addr = 11;
+message FriendsInfoRequest {
+    int64 userId = 1;
+    int64 friendId = 2;
+    int32 role = 3;
+}
+
+message FriendsInfoResponse {
+  int64 userId = 1;
+  string nickname = 2;
+  string Abstract = 3;
+  string avatar = 4;
+  int32 Gender = 5;
+  string addr = 6;
+  string Notice = 7;
+}
+
+//message UserConfigUpdateRequest {
+//  int64 user_id = 1;
+//  string recall_message = 2;
+//  string avatar = 3;
+//  int32 gender = 4;
+//  string addr = 5;
+//  string abstract = 6;
+//  bool friends_online = 7;
+//  bool all_sounds = 8;
+//  bool secure_link = 9;
+//  bool save_pwd = 10;
+//  int32 search_user = 11;
+//  int32 verification_type = 12;
+//  VerificationQuestion verification_question = 13;
 //}
+
+//message UserConfigUpdateResponse {
+//  string message = 1;
+//}
+
+message UserConfigRequest{
+  int64 userId = 1;
+}
+
+message VerificationQuestion {
+  string question1 =1;
+  string question2 =2;
+  string question3 =3;
+  string answer1 =4;
+  string answer2 =5;
+  string answer3 =6;
+}
+message UserConfigResponse {
+  int64 id = 12;
+  int64 user_id = 1;
+  string recall_message = 2;
+  bool friends_online = 4;
+  bool all_sounds = 5;
+  bool secure_link = 6;
+  bool save_pwd = 7;
+  int32 search_user = 8;
+  int32 verification_type = 9;
+  VerificationQuestion verification_question = 10;
+}
 
 message LoginRequest{
   string mobile = 1;
@@ -77,12 +127,8 @@ message UserInfoResponse {
   string nickname = 2;
   string mobile = 3;
   string avatar = 4;
-  int32 role = 9;
   string gender = 8;
+  string abstract = 9;
   string addr = 10;
-  string create_at = 5;
-  string update_at = 6;
-  string delete_at = 11;
-  bool  is_delete = 12;
 }
 

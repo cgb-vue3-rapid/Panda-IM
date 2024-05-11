@@ -19,10 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	User_Login_FullMethodName           = "/service.User/Login"
-	User_Register_FullMethodName        = "/service.User/Register"
-	User_Logout_FullMethodName          = "/service.User/Logout"
-	User_GetUserInfoByID_FullMethodName = "/service.User/GetUserInfoByID"
+	User_Login_FullMethodName              = "/service.User/Login"
+	User_Register_FullMethodName           = "/service.User/Register"
+	User_Logout_FullMethodName             = "/service.User/Logout"
+	User_GetUserInfoByID_FullMethodName    = "/service.User/GetUserInfoByID"
+	User_GetUserConfigByID_FullMethodName  = "/service.User/GetUserConfigByID"
+	User_GetFriendsInfoByID_FullMethodName = "/service.User/GetFriendsInfoByID"
 )
 
 // UserClient is the client API for User service.
@@ -33,6 +35,8 @@ type UserClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
 	GetUserInfoByID(ctx context.Context, in *UserInfoRequest, opts ...grpc.CallOption) (*UserInfoResponse, error)
+	GetUserConfigByID(ctx context.Context, in *UserConfigRequest, opts ...grpc.CallOption) (*UserConfigResponse, error)
+	GetFriendsInfoByID(ctx context.Context, in *FriendsInfoRequest, opts ...grpc.CallOption) (*FriendsInfoResponse, error)
 }
 
 type userClient struct {
@@ -79,6 +83,24 @@ func (c *userClient) GetUserInfoByID(ctx context.Context, in *UserInfoRequest, o
 	return out, nil
 }
 
+func (c *userClient) GetUserConfigByID(ctx context.Context, in *UserConfigRequest, opts ...grpc.CallOption) (*UserConfigResponse, error) {
+	out := new(UserConfigResponse)
+	err := c.cc.Invoke(ctx, User_GetUserConfigByID_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) GetFriendsInfoByID(ctx context.Context, in *FriendsInfoRequest, opts ...grpc.CallOption) (*FriendsInfoResponse, error) {
+	out := new(FriendsInfoResponse)
+	err := c.cc.Invoke(ctx, User_GetFriendsInfoByID_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServer is the server API for User service.
 // All implementations must embed UnimplementedUserServer
 // for forward compatibility
@@ -87,6 +109,8 @@ type UserServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)
 	GetUserInfoByID(context.Context, *UserInfoRequest) (*UserInfoResponse, error)
+	GetUserConfigByID(context.Context, *UserConfigRequest) (*UserConfigResponse, error)
+	GetFriendsInfoByID(context.Context, *FriendsInfoRequest) (*FriendsInfoResponse, error)
 	mustEmbedUnimplementedUserServer()
 }
 
@@ -105,6 +129,12 @@ func (UnimplementedUserServer) Logout(context.Context, *LogoutRequest) (*LogoutR
 }
 func (UnimplementedUserServer) GetUserInfoByID(context.Context, *UserInfoRequest) (*UserInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUserInfoByID not implemented")
+}
+func (UnimplementedUserServer) GetUserConfigByID(context.Context, *UserConfigRequest) (*UserConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserConfigByID not implemented")
+}
+func (UnimplementedUserServer) GetFriendsInfoByID(context.Context, *FriendsInfoRequest) (*FriendsInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetFriendsInfoByID not implemented")
 }
 func (UnimplementedUserServer) mustEmbedUnimplementedUserServer() {}
 
@@ -191,6 +221,42 @@ func _User_GetUserInfoByID_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_GetUserConfigByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).GetUserConfigByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_GetUserConfigByID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).GetUserConfigByID(ctx, req.(*UserConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_GetFriendsInfoByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FriendsInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).GetFriendsInfoByID(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_GetFriendsInfoByID_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).GetFriendsInfoByID(ctx, req.(*FriendsInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // User_ServiceDesc is the grpc.ServiceDesc for User service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -213,6 +279,14 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUserInfoByID",
 			Handler:    _User_GetUserInfoByID_Handler,
+		},
+		{
+			MethodName: "GetUserConfigByID",
+			Handler:    _User_GetUserConfigByID_Handler,
+		},
+		{
+			MethodName: "GetFriendsInfoByID",
+			Handler:    _User_GetFriendsInfoByID_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
