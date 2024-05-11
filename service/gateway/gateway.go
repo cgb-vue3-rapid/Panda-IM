@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"io"
@@ -24,6 +25,12 @@ var (
 
 // ErrorResponse 是自定义的错误响应结构体
 type ErrorResponse struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+// AuthResponse 定义结构体来表示认证响应
+type AuthResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
@@ -80,7 +87,7 @@ func main() {
 	}
 }
 
-// 网关请求处理函数
+// 网关处理函数
 func gatewayHandler(res http.ResponseWriter, req *http.Request) {
 	// 解析请求路径，获取服务地址
 	serverAddr, err := parseRequestPath(req.URL.Path)
@@ -89,14 +96,16 @@ func gatewayHandler(res http.ResponseWriter, req *http.Request) {
 		NewErrorResponse("Invalid request", res)
 		return
 	}
-	logx.Infof("serverAddr: %s", serverAddr)
+	logx.Infof("服务地址: %s", serverAddr)
 
 	// 检查请求是否在白名单中，如果不在，则进行认证
 	if !white_name.InWhitelist(c.Whitelist, req.URL.String()) {
-		err := authenticateRequest(serverAddr, req.RemoteAddr, req.Method)
+		// 走认证服务
+		err := authenticateRequest(req.RemoteAddr, req.Method, res, req)
 		if err != nil {
 			// 替换为错误响应
-			NewErrorResponse("Authentication failed", res)
+			logx.Errorf("认证失败: %v", err)
+			NewErrorResponse("认证失败", res)
 			return
 		}
 	}
@@ -104,7 +113,7 @@ func gatewayHandler(res http.ResponseWriter, req *http.Request) {
 	// 转发请求到服务
 	err = forwardRequest(serverAddr, req, res)
 	if err != nil {
-		// 替换为错误响应
+		logx.Errorf("转发请求失败: %v", err)
 		NewErrorResponse("Failed to forward request", res)
 		return
 	}
@@ -117,47 +126,93 @@ func parseRequestPath(path string) (string, error) {
 	if len(addrList) != 2 {
 		return "", fmt.Errorf("invalid request path: %s", path)
 	}
-	logx.Infof("serverAddr: %s", addrList[1])
 	return addrList[1], nil
 }
 
 // 发起认证请求
-func authenticateRequest(serverAddr, remoteAddr, method string) error {
-	authAddr, err := getServiceAddress(serverAddr)
+func authenticateRequest(remoteAddr, method string, res http.ResponseWriter, req *http.Request) error {
+
+	// 解析头部携带的token
+	ok, tokenStr := authenticateAndAuthorizeToken(res, req)
+
+	if !ok {
+		logx.Errorf("认证失败")
+		return fmt.Errorf("failed")
+	}
+
+	// 获取认证服务地址
+	authAddr, err := getServiceAddress("auth")
 	if err != nil {
 		logx.Errorf("failed to get auth service address: %v", err)
+		NewErrorResponse("认证失败", res)
 		return err
 	}
-	logx.Infof("authAddr: %s", authAddr)
+	logx.Infof("认证服务地址: %s", authAddr)
 	authURL := fmt.Sprintf("http://%s/v1/api/auth/%s", authAddr, c.Auth.Authenticate)
-	logx.Infof("authURL: %s", authURL)
+	logx.Infof("认证服务请求地址: %s", authURL)
 	authReq, err := http.NewRequest(method, authURL, nil)
 	if err != nil {
 		logx.Errorf("failed to create auth request: %v", err)
 		return err
 	}
-	logx.Infof("remoteAddr: %s", remoteAddr)
+	logx.Infof("指发起请求的客户端的地址: %s", remoteAddr)
 	authReq.Header.Set("validPath", remoteAddr)
+	authReq.Header.Set("token", tokenStr)
+
+	// 发送认证请求
 	authRes, err := http.DefaultClient.Do(authReq)
 	if err != nil {
 		logx.Errorf("failed to send auth request: %v", err)
 		return err
 	}
-	defer authRes.Body.Close()
-	// 处理认证响应
-	// ...
 
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logx.Errorf("failed to close auth response body: %v", err)
+		}
+	}(authRes.Body)
+	// 处理认证响应
+	// 检查响应状态码
+	if authRes.StatusCode != http.StatusOK {
+		logx.Errorf("认证失败，响应状态码为: %d", authRes.StatusCode)
+		return errors.New("failed")
+	}
+
+	// 读取响应的内容
+	body, err := io.ReadAll(authRes.Body)
+	if err != nil {
+		logx.Errorf("failed to read auth response body: %v", err)
+		return err
+	}
+
+	// 解析JSON数据到结构体
+	var response AuthResponse
+	err = json.Unmarshal(body, &response)
+	if err != nil {
+		logx.Errorf("failed to decode auth response body: %v", err)
+		return err
+	}
+
+	// 认证失败
+	if response.Code != 0 {
+		return errors.New("failed")
+	}
+
+	// 输出响应的内容
+	logx.Infof("auth response: %s", string(body))
 	return nil
 }
 
 // 转发请求到服务
 func forwardRequest(serverAddr string, req *http.Request, res http.ResponseWriter) error {
+
 	addr, err := getServiceAddress(serverAddr)
 	if err != nil {
 		logx.Errorf("failed to get service address: %v", err)
 		return err
 	}
-	logx.Infof("forwarding request to: %s", addr)
+	logx.Infof("转发请求到: %s", addr)
 	url := "http://" + addr + req.URL.String()
 	all, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -189,9 +244,44 @@ func forwardRequest(serverAddr string, req *http.Request, res http.ResponseWrite
 // 从etcd中获取服务地址
 func getServiceAddress(serverAddr string) (string, error) {
 	etcdClient := etcdOp.NewClient(c.Etcd.Endpoints)
-	resp := etcdClient.Get(serverAddr + constants.Prefix)
+	resp := etcdClient.Get(serverAddr + constants.ApiPrefix)
 	if string(resp.Kvs[0].Value) == "" {
 		return "", fmt.Errorf("no such server: %s", serverAddr)
 	}
 	return string(resp.Kvs[0].Value), nil
+}
+
+func authenticateAndAuthorizeToken(w http.ResponseWriter, r *http.Request) (bool, string) {
+	// 获取请求中的 Authorization 头部
+	token := r.Header.Get("token")
+
+	// 如果 Authorization 头部为空，则返回 TokenIsEmpty 错误
+	if token == "" {
+		logx.Errorf("token is empty")
+		return false, ""
+	}
+
+	//r.Header.Set("tokenStr", fmt.Sprintf("Bearer %s %s", parts[0], parts[1]))
+
+	//// 解析 Token
+	//parseToken, isExpire, err := token_manager.ParseToken(parts[0], parts[1], "panda@akita@AccessSecret", "panda@akita@RefreshSecret")
+	//if err != nil {
+	//	// 如果解析 Token 出错，则返回 TokenParseErr 错误
+	//	httpx.ErrorCtx(r.Context(), w, xcode.TokenParseErr)
+	//	return false
+	//}
+
+	// 刷新 Token
+	//if isExpire {
+	//	parts[0], parts[1] = token_manager.GenToken(parseToken.UserID, parseToken.Nickname, "panda@akita@AccessSecret", "panda@akita@RefreshSecret", parseToken.Role)
+	//}
+
+	//// 将用户 ID 和 Token 添加到请求的上下文中
+	//ctx := context.WithValue(r.Context(), constants.UserId, parseToken.UserID)
+	//*r = *r.WithContext(ctx)
+	//
+	//// 打印用户 ID
+	//fmt.Println(r.Context().Value(constants.UserId))
+
+	return true, token
 }

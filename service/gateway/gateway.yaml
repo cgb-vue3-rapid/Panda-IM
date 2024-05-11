@@ -10,7 +10,6 @@ Whitelist:
   - /v1/api/auth/register
   - /v1/api/auth/verification
   - /v1/api/auth/authenticate
-  - /v1/api/user//userInfo
 Log:
   Encoding: plain
   TimeFormat: 2006-01-02 15:04:05
